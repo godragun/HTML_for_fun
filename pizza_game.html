@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Topping Master</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-title {
+            font-size: 2.5em;
+            color: #d32f2f;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .score-item {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .pizza-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .pizza-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .pizza-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 350px;
+            min-width: 350px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .pizza-base {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #f4e4a6 0%, #d4af37 20%, #cd853f 80%, #8b4513 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 -5px 15px rgba(139, 69, 19, 0.3);
+            cursor: crosshair;
+            overflow: hidden;
+            border: 8px solid #8b4513;
+        }
+
+        .pizza-base::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            right: 10%;
+            bottom: 10%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(244, 228, 166, 0.8) 0%, rgba(255, 99, 71, 0.4) 100%);
+            pointer-events: none;
+        }
+
+        .topping {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .topping.placing {
+            animation: placeTopping 0.5s ease-out;
+        }
+
+        @keyframes placeTopping {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+        }
+
+        .controls {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+        }
+
+        .controls h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.4em;
+        }
+
+        .topping-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .topping-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topping-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .topping-btn:active {
+            transform: translateY(0);
+        }
+
+        .topping-btn.used {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .required-toppings {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .required-toppings h4 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .required-list {
+            list-style: none;
+            font-size: 14px;
+        }
+
+        .required-list li {
+            margin: 5px 0;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .required-list li.completed {
+            background: rgba(76, 175, 80, 0.3);
+            text-decoration: line-through;
+        }
+
+        .action-buttons {
+            display: grid;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: linear-gradient(45deg, #2196f3, #21cbf3);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(45deg, #4caf50, #45a049);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        .result-message.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .result-message.fail {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        /* Topping Styles */
+        .pepperoni {
+            width: 25px;
+            height: 25px;
+            background: radial-gradient(circle, #c41e3a 0%, #8b0000 100%);
+            border-radius: 50%;
+            border: 2px solid #660000;
+            box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .mushroom {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(ellipse, #d2b48c 0%, #8b7355 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            border: 1px solid #654321;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .cheese {
+            width: 30px;
+            height: 15px;
+            background: linear-gradient(45deg, #fff8dc 0%, #f0e68c 100%);
+            border-radius: 8px;
+            border: 1px solid #daa520;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .olive {
+            width: 15px;
+            height: 20px;
+            background: radial-gradient(ellipse, #556b2f 0%, #2f4f2f 100%);
+            border-radius: 50%;
+            border: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .bell-pepper {
+            width: 22px;
+            height: 18px;
+            background: linear-gradient(45deg, #ff6347 0%, #dc143c 100%);
+            border-radius: 60% 40% 40% 60%;
+            border: 1px solid #8b0000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .onion {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #f5f5dc 0%, #dda0dd 30%, #9370db 100%);
+            border-radius: 50%;
+            border: 1px solid #8a2be2;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .pizza-label {
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .pizza-placeholder {
+            position: relative;
+            min-height: 350px;
+            min-width: 350px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pizza-placeholder-text {
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .pizza-row {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .pizza-container, .pizza-placeholder {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .controls {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🍕 Pizza Topping Master</h1>
+            <div class="score-board">
+                <div class="score-item">Score: <span id="score">0</span></div>
+                <div class="score-item">Level: <span id="level">1</span></div>
+                <div class="score-item">Toppings: <span id="toppings-count">0/6</span></div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="pizza-area">
+                <div class="pizza-row">
+                    <div class="pizza-container">
+                        <div class="pizza-base" id="pizzaBase"></div>
+                    </div>
+                    <div class="pizza-container">
+                        <div class="pizza-base" id="targetPizza"></div>
+                        <div class="pizza-label">Target Pizza</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <h3>🎯 Add Toppings</h3>
+                <div class="topping-buttons">
+                    <button class="topping-btn" data-topping="pepperoni">🔴 Pepperoni</button>
+                    <button class="topping-btn" data-topping="mushroom">🍄 Mushroom</button>
+                    <button class="topping-btn" data-topping="cheese">🧀 Cheese</button>
+                    <button class="topping-btn" data-topping="olive">🫒 Olive</button>
+                    <button class="topping-btn" data-topping="bell-pepper">🌶️ Bell Pepper</button>
+                    <button class="topping-btn" data-topping="onion">🧅 Onion</button>
+                </div>
+
+                <div class="required-toppings">
+                    <h4>Required Toppings:</h4>
+                    <ul class="required-list" id="requiredList">
+                        <li data-topping="pepperoni">🔴 Pepperoni</li>
+                        <li data-topping="mushroom">🍄 Mushroom</li>
+                        <li data-topping="cheese">🧀 Cheese</li>
+                        <li data-topping="olive">🫒 Olive</li>
+                        <li data-topping="bell-pepper">🌶️ Bell Pepper</li>
+                        <li data-topping="onion">🧅 Onion</li>
+                    </ul>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" id="checkPizza">✅ Check Pizza</button>
+                    <button class="action-btn" id="clearPizza">🗑️ Clear Pizza</button>
+                    <button class="action-btn" id="newGame">🆕 New Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="result-message" id="resultMessage"></div>
+
+    <script>
+        class PizzaGame {
+            constructor() {
+                this.score = 0;
+                this.level = 1;
+                this.toppingsPlaced = [];
+                this.allToppings = ['pepperoni', 'mushroom', 'cheese', 'olive', 'bell-pepper', 'onion'];
+                this.requiredToppings = [];
+                this.currentTopping = null;
+                this.pizzaBase = document.getElementById('pizzaBase');
+                this.targetPizza = document.getElementById('targetPizza');
+                this.scoreElement = document.getElementById('score');
+                this.levelElement = document.getElementById('level');
+                this.toppingsCountElement = document.getElementById('toppings-count');
+                this.resultMessage = document.getElementById('resultMessage');
+                this.requiredList = document.getElementById('requiredList');
+
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.generateTargetPizza();
+                this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                // Topping button clicks
+                document.querySelectorAll('.topping-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.selectTopping(e.target.dataset.topping);
+                    });
+                });
+
+                // Pizza base click
+                this.pizzaBase.addEventListener('click', (e) => {
+                    if (this.currentTopping) {
+                        this.placeToppingAtPosition(e);
+                    }
+                });
+
+                // Action buttons
+                document.getElementById('checkPizza').addEventListener('click', () => this.checkPizza());
+                document.getElementById('clearPizza').addEventListener('click', () => this.clearPizza());
+                document.getElementById('newGame').addEventListener('click', () => this.newGame());
+            }
+
+            generateTargetPizza() {
+                // Clear previous target pizza
+                this.targetPizza.innerHTML = '';
+                this.requiredToppings = [];
+                
+                // Generate 3-6 random toppings for the target
+                const numToppings = Math.min(Math.floor(Math.random() * 4) + 3, 6);
+                const shuffled = [...this.allToppings].sort(() => 0.5 - Math.random());
+                this.requiredToppings = shuffled.slice(0, numToppings);
+                
+                // Update required list display
+                this.updateRequiredList();
+                
+                // Create visual target pizza
+                const centerX = this.targetPizza.offsetWidth / 2;
+                const centerY = this.targetPizza.offsetHeight / 2;
+                const radius = Math.min(centerX, centerY) - 30;
+                
+                this.requiredToppings.forEach((topping, index) => {
+                    // Distribute toppings evenly around the pizza
+                    const angle = (index * (2 * Math.PI / this.requiredToppings.length)) + (Math.random() * 0.5 - 0.25);
+                    const distance = radius * (0.5 + Math.random() * 0.3);
+                    
+                    const x = centerX + Math.cos(angle) * distance;
+                    const y = centerY + Math.sin(angle) * distance;
+                    
+                    const toppingElement = document.createElement('div');
+                    toppingElement.className = `topping ${topping}`;
+                    toppingElement.style.left = `${x - 12}px`;
+                    toppingElement.style.top = `${y - 12}px`;
+                    toppingElement.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    
+                    this.targetPizza.appendChild(toppingElement);
+                });
+            }
+
+            updateRequiredList() {
+                this.requiredList.innerHTML = '';
+                
+                this.allToppings.forEach(topping => {
+                    const li = document.createElement('li');
+                    li.dataset.topping = topping;
+                    li.textContent = this.getToppingEmoji(topping) + ' ' + this.formatToppingName(topping);
+                    
+                    if (this.requiredToppings.includes(topping)) {
+                        li.classList.add('completed');
+                    }
+                    
+                    this.requiredList.appendChild(li);
+                });
+            }
+
+            getToppingEmoji(topping) {
+                const emojis = {
+                    'pepperoni': '🔴',
+                    'mushroom': '🍄',
+                    'cheese': '🧀',
+                    'olive': '🫒',
+                    'bell-pepper': '🌶️',
+                    'onion': '🧅'
+                };
+                return emojis[topping] || '🍕';
+            }
+
+            formatToppingName(topping) {
+                return topping.split('-').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+            }
+
+            selectTopping(toppingType) {
+                this.currentTopping = toppingType;
+                
+                // Update button states
+                document.querySelectorAll('.topping-btn').forEach(btn => {
+                    btn.style.background = 'linear-gradient(45deg, #ff6b6b, #ff8e53)';
+                    btn.style.transform = 'scale(1)';
+                });
+
+                const selectedBtn = document.querySelector(`[data-topping="${toppingType}"]`);
+                selectedBtn.style.background = 'linear-gradient(45deg, #4caf50, #45a049)';
+                selectedBtn.style.transform = 'scale(1.05)';
+
+                // Change cursor
+                this.pizzaBase.style.cursor = 'crosshair';
+            }
+
+            placeToppingAtPosition(e) {
+                const rect = this.pizzaBase.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                // Check if click is within pizza bounds (circular)
+                const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+                if (distance > centerX - 20) return; // Outside pizza boundary
+
+                // Create topping element
+                const topping = document.createElement('div');
+                topping.className = `topping ${this.currentTopping} placing`;
+                topping.style.left = (clickX - 12) + 'px';
+                topping.style.top = (clickY - 12) + 'px';
+
+                // Add some random rotation for realism
+                topping.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+                this.pizzaBase.appendChild(topping);
+
+                // Track placement
+                this.toppingsPlaced.push({
+                    type: this.currentTopping,
+                    element: topping,
+                    x: clickX,
+                    y: clickY
+                });
+
+                this.updateToppingsDisplay();
+                this.currentTopping = null;
+                this.pizzaBase.style.cursor = 'default';
+
+                // Reset button appearance
+                document.querySelectorAll('.topping-btn').forEach(btn => {
+                    btn.style.background = 'linear-gradient(45deg, #ff6b6b, #ff8e53)';
+                    btn.style.transform = 'scale(1)';
+                });
+
+                // Sound effect (visual feedback)
+                topping.style.animation = 'placeTopping 0.5s ease-out';
+            }
+
+            updateToppingsDisplay() {
+                const placedTypes = [...new Set(this.toppingsPlaced.map(t => t.type))];
+                this.toppingsCountElement.textContent = `${placedTypes.length}/${this.requiredToppings.length}`;
+
+                // Update required list
+                document.querySelectorAll('.required-list li').forEach(li => {
+                    const toppingType = li.dataset.topping;
+                    if (placedTypes.includes(toppingType)) {
+                        li.classList.add('completed');
+                    } else {
+                        li.classList.remove('completed');
+                    }
+                });
+
+                // Update topping buttons
+                document.querySelectorAll('.topping-btn').forEach(btn => {
+                    const toppingType = btn.dataset.topping;
+                    if (placedTypes.includes(toppingType)) {
+                        btn.classList.add('used');
+                    } else {
+                        btn.classList.remove('used');
+                    }
+                });
+            }
+
+            checkPizza() {
+                const placedTypes = [...new Set(this.toppingsPlaced.map(t => t.type))];
+                const requiredSet = new Set(this.requiredToppings);
+                const placedSet = new Set(placedTypes);
+
+                const hasAllRequired = this.requiredToppings.every(topping => placedSet.has(topping));
+                const hasOnlyRequired = placedTypes.every(topping => requiredSet.has(topping));
+                const correctCount = placedTypes.length === this.requiredToppings.length;
+
+                if (hasAllRequired && hasOnlyRequired && correctCount) {
+                    this.showResult('🎉 Perfect Pizza! All toppings correct!', true);
+                    this.fireConfetti();
+                    this.score += 100 * this.level;
+                    this.level++;
+                    setTimeout(() => {
+                        this.clearPizza();
+                        this.generateTargetPizza();
+                        this.updateDisplay();
+                    }, 2000);
+                } else {
+                    const missing = this.requiredToppings.filter(t => !placedSet.has(t));
+                    const extra = placedTypes.filter(t => !requiredSet.has(t));
+                    
+                    let message = '❌ Pizza incomplete!\n';
+                    if (missing.length > 0) {
+                        message += `Missing: ${missing.map(t => this.formatToppingName(t)).join(', ')}\n`;
+                    }
+                    if (extra.length > 0) {
+                        message += `Extra: ${extra.map(t => this.formatToppingName(t)).join(', ')}`;
+                    }
+                    
+                    this.showResult(message, false);
+                }
+            }
+
+            fireConfetti() {
+                const count = 200;
+                const defaults = {
+                    origin: { y: 0.7 },
+                    spread: 90,
+                    ticks: 100,
+                    gravity: 1,
+                    decay: 0.94,
+                    startVelocity: 30,
+                    colors: ['#FF5252', '#FFD740', '#64FFDA', '#448AFF', '#B388FF'],
+                    shapes: ['circle', 'square'],
+                    scalar: 1.2
+                };
+
+                function fire(particleRatio, opts) {
+                    confetti({
+                        ...defaults,
+                        ...opts,
+                        particleCount: Math.floor(count * particleRatio)
+                    });
+                }
+
+                fire(0.25, { spread: 26, startVelocity: 55 });
+                fire(0.2, { spread: 60 });
+                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+                fire(0.1, { spread: 120, startVelocity: 45 });
+            }
+
+            showResult(message, isSuccess) {
+                this.resultMessage.textContent = message;
+                this.resultMessage.className = `result-message show ${isSuccess ? '' : 'fail'}`;
+                
+                setTimeout(() => {
+                    this.resultMessage.classList.remove('show');
+                }, 3000);
+            }
+
+            clearPizza() {
+                // Remove all toppings
+                this.toppingsPlaced.forEach(topping => {
+                    topping.element.remove();
+                });
+                
+                this.toppingsPlaced = [];
+                this.currentTopping = null;
+                this.pizzaBase.style.cursor = 'default';
+                
+                this.updateToppingsDisplay();
+                
+                // Reset button states
+                document.querySelectorAll('.topping-btn').forEach(btn => {
+                    btn.style.background = 'linear-gradient(45deg, #ff6b6b, #ff8e53)';
+                    btn.style.transform = 'scale(1)';
+                    btn.classList.remove('used');
+                });
+            }
+
+            newGame() {
+                this.clearPizza();
+                this.score = 0;
+                this.level = 1;
+                this.generateTargetPizza();
+                this.updateDisplay();
+                this.showResult('🆕 New game started! Match the target pizza!', true);
+            }
+
+            updateDisplay() {
+                this.scoreElement.textContent = this.score;
+                this.levelElement.textContent = this.level;
+            }
+        }
+
+        // Start the game when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PizzaGame();
+        });
+    </script>
+</body>
+</html>
